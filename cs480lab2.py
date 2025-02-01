@@ -53,7 +53,7 @@ def get_next_token(iterator, next_char=""):
     if not next_char:
         return ("end", True, "") # got all tokens
     
-    if next_char and next_char in "+-*/^(){}":
+    if next_char in "+-*/^(){}":
         return (next_char, True, "")
     elif next_char == "s":
         
@@ -89,7 +89,7 @@ def get_next_token(iterator, next_char=""):
             if next_char_3 == "g":
                 return ("log", True, "")
             
-    elif next_char and next_char in "0123456789.":
+    elif next_char in "0123456789.":
         
         while next_char and next_char in "0123456789.":
             dots_seen += next_char == "."
@@ -226,10 +226,11 @@ def recursive_check_correctness(iter_tokens):
 def evaluate(tokens):
     
     easier_tokens = nest_parenthesized_expressions(iter(tokens))
-    easier_tokens = nest_exponentiation(iter(easier_tokens))
-    easier_tokens = convert_to_no_unaries(iter(easier_tokens))
     
-    print(easier_tokens)
+    # do this here since ^ has higher precenence than unaries
+    easier_tokens = nest_exponentiation(iter(easier_tokens))
+    
+    easier_tokens = convert_to_no_unaries(iter(easier_tokens))
     
     return shunting_yard_evaluation(iter(easier_tokens))
 
@@ -249,35 +250,6 @@ def nest_parenthesized_expressions(iter_tokens):
     return easier_tokens
 
 
-def convert_to_no_unaries(iter_easier_tokens):
-    
-    easier_tokens = []
-    
-    unary_minuses_in_a_row = 0
-    
-    for token in iter_easier_tokens:
-        if token == "+":
-            continue
-        elif token == "-":
-            unary_minuses_in_a_row += 1
-        else:
-            if unary_minuses_in_a_row % 2 == 1:
-                easier_tokens.append([-1, "*", token])
-                if token in FUNCTION_NAMES:
-                    easier_tokens[-1].append(next(iter_easier_tokens))
-            else:
-                easier_tokens.append(token)
-            token = next(iter_easier_tokens, "")
-            if token:
-                easier_tokens.append(token)
-            unary_minuses_in_a_row = 0
-            
-            if isinstance(easier_tokens[-1], list):
-                easier_tokens[-1] = convert_to_no_unaries(iter(easier_tokens[-1]))
-    
-    return easier_tokens
-
-
 def nest_exponentiation(iter_easier_tokens):
     
     easier_tokens = []
@@ -286,10 +258,53 @@ def nest_exponentiation(iter_easier_tokens):
         if token != "^":
             easier_tokens.append(token)
         else:
-            next_token = next(iter_easier_tokens)
-            easier_tokens.append([easier_tokens.pop(), token, next_token])
-            if next_token in FUNCTION_NAMES:
+            easier_tokens.append([easier_tokens.pop(), token])
+            for token in iter_easier_tokens:
+                easier_tokens[-1].append(token)
+                if token != "+" and  token != "-":
+                    break
+            if token in FUNCTION_NAMES:
                 easier_tokens[-1].append(next(iter_easier_tokens))
+    
+    return easier_tokens
+
+
+def convert_to_no_unaries(iter_easier_tokens):
+    
+    easier_tokens = []
+    
+    minuses_in_a_row = 0
+    
+    for token in iter_easier_tokens:
+        if token == "+":
+            continue
+        elif token == "-":
+            minuses_in_a_row += 1
+        else:
+            if minuses_in_a_row % 2 == 1:
+                
+                easier_tokens.append([-1, "*", token])
+                if token in FUNCTION_NAMES:
+                    token = convert_to_no_unaries(iter(next(iter_easier_tokens)))
+                    easier_tokens[-1].append(token)
+                elif isinstance(token, list):
+                    easier_tokens[-1][-1] = convert_to_no_unaries(iter(token))
+            else:
+                
+                if token in FUNCTION_NAMES:
+                    token = convert_to_no_unaries(iter(next(iter_easier_tokens)))
+                    easier_tokens.append(token)
+                elif isinstance(token, list):
+                    easier_tokens.append(convert_to_no_unaries(iter(token)))
+                else:
+                    easier_tokens.append(token)
+            
+            # adding next operator
+            token = next(iter_easier_tokens, None)
+            if token is not None:
+                easier_tokens.append(token)
+            
+            minuses_in_a_row = 0
     
     return easier_tokens
 
@@ -310,6 +325,8 @@ def shunting_yard_evaluation(iter_easier_tokens):
     operator_stack = []
     output_queue = []
     
+    inner_expression_result = None
+    argument = None
     function = None
     operator = None
     
@@ -322,20 +339,42 @@ def shunting_yard_evaluation(iter_easier_tokens):
             operator = precedence.get(token)
         
         if token_is_list:
-            output_queue.append(shunting_yard_evaluation(iter(token)))
+            
+            inner_expression_result = shunting_yard_evaluation(iter(token))
+            output_queue.append(inner_expression_result)
+            if inner_expression_result is None:
+                return None
+            
         elif not isinstance(token, str): # it's an int or float
             output_queue.append(token)
         elif function is not None:
-            output_queue.append(function(shunting_yard_evaluation(iter(next(iter_easier_tokens)))))
+            
+            argument = shunting_yard_evaluation(iter(next(iter_easier_tokens)))
+            if argument is None:
+                return None
+            try:
+                output_queue.append(function(argument))
+            except (ValueError, ZeroDivisionError):
+                if token == "cot" or token == "tan":
+                    print(token, "(", argument, ") is undefined", sep="")
+                else: # ln or log
+                    print(token, "(", argument, ") isn't a real number", sep="")
+                return None
+            
         elif operator is not None:
+            
             while operator_stack and precedence[token] <= precedence[operator_stack[-1]]:
                 output_queue.append(operator_stack.pop())
             operator_stack.append(token)
+            
     
     while operator_stack:
         output_queue.append(operator_stack.pop())
     
-    return rpn_evaluation(output_queue)
+    try:
+        return rpn_evaluation(output_queue)
+    except ZeroDivisionError:
+        print("couldn't evaluate expression due to division by zero")
 
 
 def rpn_evaluation(output_queue):
@@ -401,11 +440,13 @@ def main():
         if not check_correctness(tokens):
             continue
         
-        print("the expression equals", evaluate(tokens), end="\n\n")
-    
+        result = evaluate(tokens)
+        
+        if result is not None:
+            print("the expression equals", result, end="\n\n")
+        
     print("goodbye")
 
 
 if __name__ == "__main__":
-    print(eval("-5.78+-(4-2.23)**sin(0)*cos(1)/(1+tan(2*log(-3+2*(1.23+99.111))))"))
     main()
