@@ -1,17 +1,36 @@
 
 
 from math import sin, cos, tan, log, log10
+from typing import Iterator, List, Optional, Union, Tuple
 
 
 FUNCTION_NAMES = ("sin", "cos", "tan", "cot", "ln", "log")
 
 
-def cot(x):
+def cot(x: Union[int, float]) -> float:
+    """
+    Returns the cotangent of x radians.
+    
+    arguments:
+        x (Union[int, float]): The int or float to get the cotangent of.
+    
+    return:
+        float: The result of cot(x).
+    """
     
     return 1 / tan(x)
 
 
-def get_tokens(expression):
+def get_tokens(expression: str) -> List[Union[int, float, str]]:
+    """
+    Converts an infix math expression string to a list of tokens.
+    
+    arguments:
+        expression (str): The infix expression string.
+    
+    return:
+        List[Union[int, float, str]]: A list of tokens representing the infix expression, or an empty list if any token can't be evaluated.
+    """
     
     tokens = []
     next_char = ""
@@ -36,7 +55,17 @@ def get_tokens(expression):
     return tokens
 
 
-def get_next_token(iterator, next_char=""):
+def get_next_token(iterator: Iterator[str], next_char: str = "") -> Tuple[Union[int, float, str], bool, str]:
+    """
+    Gets the next token from the infix expression passed as an iterator.
+    
+    arguments:
+        iterator (Iterator[str]): An iterator from the infix expression.
+        next_char (str): The next character to check, or an empty string if the next character should be taken from the iterator.
+    
+    return:
+        Tuple[Union[int, float, str], bool, str]: A tuple containing the next token, a boolean indicating if the token was read successfully, and the next character to check, in that order.
+    """
     
     next_char = next(iterator, "") if not next_char else next_char
     next_char_2 = ""
@@ -114,7 +143,16 @@ def get_next_token(iterator, next_char=""):
     return ("".join(wrong_token), False, "") # couldn't evaluate token
 
 
-def get_int_or_float_from_string(number_string):
+def get_int_or_float_from_string(number_string: str) -> Union[int, float]:
+    """
+    Converts a string to an int or float.
+    
+    arguments:
+        number_string (str): A string representing an int or float.
+    
+    return:
+        Union[int, float]: The number_string argument converted to an int or float.
+    """
     
     left_of_decimal = 0
     right_of_decimal = 0
@@ -137,7 +175,16 @@ def get_int_or_float_from_string(number_string):
     return left_of_decimal if not dot_seen else left_of_decimal + right_of_decimal
 
 
-def check_correctness(tokens):
+def check_correctness(tokens: List[Union[int, float, str]]) -> bool:
+    """
+    Checks if the infix expression is written correctly.
+    
+    arguments:
+        tokens (List[Union[int, float, str]]): A list of tokens representing the infix expression.
+    
+    return:
+        bool: True if the infix expression is written correctly, otherwise False.
+    """
     
     if not check_parens_correctness(tokens):
         return False
@@ -151,7 +198,16 @@ def check_correctness(tokens):
     return result
 
 
-def check_parens_correctness(tokens):
+def check_parens_correctness(tokens: List[Union[int, float, str]]) -> bool:
+    """
+    Checks if parentheses are included correctly. Checks for open parentheses, empty parentheses, and missing parentheses after functions.
+    
+    arguments:
+        tokens (List[Union[int, float, str]]): A list of tokens representing the infix expression.
+    
+    return:
+        bool: True if the infix expression's parentheses are included correctly, otherwise False.
+    """
     
     parens_stack = []
     
@@ -192,7 +248,16 @@ def check_parens_correctness(tokens):
     return True
 
 
-def recursive_check_correctness(iter_tokens):
+def recursive_check_correctness(iter_tokens: Iterator[Union[int, float, str]]) -> bool:
+    """
+    Recursively checks if an infix expression and its parenthesized expressions are written correctly.
+    
+    arguments:
+        iter_tokens (Iterator[Union[int, float, str]]): An iterator of tokens representing the infix expression.
+    
+    return:
+        bool: True if the infix expression and its parenthesized expressions are written correcly, otherwise False.
+    """
     
     operator_expected = False
     
@@ -223,7 +288,16 @@ def recursive_check_correctness(iter_tokens):
     return True
 
 
-def evaluate(tokens):
+def evaluate(tokens: List[Union[int, float, str]]) -> Optional[Union[int, float]]:
+    """
+    Evaluates an infix expression.
+    
+    arguments:
+        tokens (List[Union[int, float, str]]): A list of tokens representing the infix expression.
+    
+    return:
+        Optional[Union[int, float]]: The result of the infix expression, or None if it couldn't be evaluated (e.g. division by zero).
+    """
     
     easier_tokens = nest_parenthesized_expressions(iter(tokens))
     
@@ -235,7 +309,16 @@ def evaluate(tokens):
     return shunting_yard_evaluation(iter(easier_tokens))
 
 
-def nest_parenthesized_expressions(iter_tokens):
+def nest_parenthesized_expressions(iter_tokens: Iterator[Union[int, float, str]]) -> List[Union[int, float, str, list]]:
+    """
+    Simplifies the token list by getting rid of parentheses and instead recursively putting parenthesized expressions in nested lists.
+    
+    arguments:
+        iter_tokens (Iterator[Union[int, float, str]]): An iterator of tokens representing the infix expression.
+    
+    return:
+        List[Union[int, float, str, list]]: A new token list where the parenthesized expressions are recursively placed in nested lists.
+    """
     
     easier_tokens = []
     
@@ -250,7 +333,16 @@ def nest_parenthesized_expressions(iter_tokens):
     return easier_tokens
 
 
-def nest_exponentiation(iter_easier_tokens):
+def nest_exponentiation(iter_easier_tokens: Iterator[Union[int, float, str, list]]) -> List[Union[int, float, str, list]]:
+    """
+    Places instances of exponentiation in nested lists. This is done to prepare for unary operator removal since exponentiation has higher precedence.
+    
+    arguments:
+        iter_easier_tokens (Iterator[Union[int, float, str, list]]): An iterator of tokens representing the infix expression.
+    
+    return:
+        List[Union[int, float, str, list]]: A new token list where instances of exponentiation are placed in nested lists.
+    """
     
     easier_tokens = []
     
@@ -269,7 +361,16 @@ def nest_exponentiation(iter_easier_tokens):
     return easier_tokens
 
 
-def convert_to_no_unaries(iter_easier_tokens):
+def convert_to_no_unaries(iter_easier_tokens: Iterator[Union[int, float, str, list]]) -> List[Union[int, float, str, list]]:
+    """
+    Returns A list of tokens representing an equivalent infix expression without unary tokens by instead multiplying values by -1.
+    
+    arguments:
+        iter_easier_tokens (Iterator[Union[int, float, str, list]]): An iterator of tokens representing the infix expression.
+    
+    return:
+        List[Union[int, float, str, list]]: A list of tokens representing an equivalent infix expression without unary tokens.
+    """
     
     easier_tokens = []
     
@@ -310,7 +411,16 @@ def convert_to_no_unaries(iter_easier_tokens):
     return easier_tokens
 
 
-def shunting_yard_evaluation(iter_easier_tokens):
+def shunting_yard_evaluation(iter_easier_tokens: Iterator[Union[int, float, str, list]]) -> Optional[Union[int, float]]:
+    """
+    Evaluates an infix expression using Shunting yard algorithm.
+    
+    arguments:
+        iter_easier_tokens (Iterator[Union[int, float, str, list]]): An iterator of tokens representing the infix expression.
+    
+    return:
+        Optional[Union[int, float]]: The result of the infix expression, or None if it couldn't be evaluated (e.g. division by zero).
+    """
     
     function_mapping = {
         "sin": sin,
@@ -378,7 +488,16 @@ def shunting_yard_evaluation(iter_easier_tokens):
         print("couldn't evaluate expression due to division by zero")
 
 
-def rpn_evaluation(output_queue):
+def rpn_evaluation(output_queue: List[Union[int, float, str]]) -> Union[int, float]:
+    """
+    Evaluates a reverse Polish notation expression.
+    
+    arguments:
+        List[Union[int, float, str]]: A list of tokens in reverse Polish notation order.
+    
+    return:
+        Union[int, float]: The result of the reverse Polish notation expression.
+    """
     
     evaluation_stack = []
     
@@ -417,7 +536,13 @@ def rpn_evaluation(output_queue):
     return evaluation_stack[0]
 
 
-def main():
+def main() -> int:
+    """
+    The main function.
+    
+    return:
+        int: The exit status.
+    """
     
     prompt = "enter an infix math expression, or \"quit\" to quit: "
     
@@ -444,10 +569,15 @@ def main():
         result = evaluate(tokens)
         
         if result is not None:
-            print("the expression equals", result)
+            try:
+                print("the expression equals", result)
+            except ValueError as e:
+                print("couldn't print result due to ValueError exception:", e)
         print()
         
-    print("goodbye")
+    print("\ngoodbye")
+    
+    return 0
 
 
 if __name__ == "__main__":
