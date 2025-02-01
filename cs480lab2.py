@@ -226,7 +226,10 @@ def recursive_check_correctness(iter_tokens):
 def evaluate(tokens):
     
     easier_tokens = nest_parenthesized_expressions(iter(tokens))
+    easier_tokens = nest_exponentiation(iter(easier_tokens))
     easier_tokens = convert_to_no_unaries(iter(easier_tokens))
+    
+    print(easier_tokens)
     
     return shunting_yard_evaluation(iter(easier_tokens))
 
@@ -271,6 +274,22 @@ def convert_to_no_unaries(iter_easier_tokens):
             
             if isinstance(easier_tokens[-1], list):
                 easier_tokens[-1] = convert_to_no_unaries(iter(easier_tokens[-1]))
+    
+    return easier_tokens
+
+
+def nest_exponentiation(iter_easier_tokens):
+    
+    easier_tokens = []
+    
+    for token in iter_easier_tokens:
+        if token != "^":
+            easier_tokens.append(token)
+        else:
+            next_token = next(iter_easier_tokens)
+            easier_tokens.append([easier_tokens.pop(), token, next_token])
+            if next_token in FUNCTION_NAMES:
+                easier_tokens[-1].append(next(iter_easier_tokens))
     
     return easier_tokens
 
@@ -388,4 +407,5 @@ def main():
 
 
 if __name__ == "__main__":
+    print(eval("-5.78+-(4-2.23)**sin(0)*cos(1)/(1+tan(2*log(-3+2*(1.23+99.111))))"))
     main()
