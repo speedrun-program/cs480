@@ -292,6 +292,7 @@ def convert_to_no_unaries(iter_easier_tokens):
             else:
                 
                 if token in FUNCTION_NAMES:
+                    easier_tokens.append(token)
                     token = convert_to_no_unaries(iter(next(iter_easier_tokens)))
                     easier_tokens.append(token)
                 elif isinstance(token, list):
@@ -337,7 +338,7 @@ def shunting_yard_evaluation(iter_easier_tokens):
         if not token_is_list:
             function = function_mapping.get(token)
             operator = precedence.get(token)
-        
+            
         if token_is_list:
             
             inner_expression_result = shunting_yard_evaluation(iter(token))
@@ -443,7 +444,8 @@ def main():
         result = evaluate(tokens)
         
         if result is not None:
-            print("the expression equals", result, end="\n\n")
+            print("the expression equals", result)
+        print()
         
     print("goodbye")
 
