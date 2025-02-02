@@ -189,7 +189,7 @@ def check_correctness(tokens: List[Union[int, float, str]]) -> bool:
     if not check_parens_correctness(tokens):
         return False
     
-    print("checking expression tokens.")
+    print("checking the expression's tokens.")
     
     result = recursive_check_correctness(iter(tokens))
     
@@ -347,7 +347,9 @@ def nest_exponentiation(iter_easier_tokens: Iterator[Union[int, float, str, list
     easier_tokens = []
     
     for token in iter_easier_tokens:
-        if token != "^":
+        if isinstance(token, list):
+            easier_tokens.append(nest_exponentiation(iter(token)))
+        elif token != "^":
             easier_tokens.append(token)
         else:
             easier_tokens.append([easier_tokens.pop(), token])
@@ -356,7 +358,10 @@ def nest_exponentiation(iter_easier_tokens: Iterator[Union[int, float, str, list
                 if token != "+" and  token != "-":
                     break
             if token in FUNCTION_NAMES:
-                easier_tokens[-1].append(next(iter_easier_tokens))
+                token = nest_exponentiation(iter(next(iter_easier_tokens)))
+                easier_tokens[-1].append(token)
+            elif isinstance(token, list):
+                easier_tokens[-1][-1] = nest_exponentiation(iter(token))
     
     return easier_tokens
 
@@ -411,6 +416,7 @@ def convert_to_no_unaries(iter_easier_tokens: Iterator[Union[int, float, str, li
     return easier_tokens
 
 
+# https://en.wikipedia.org/wiki/Shunting_yard_algorithm
 def shunting_yard_evaluation(iter_easier_tokens: Iterator[Union[int, float, str, list]]) -> Optional[Union[int, float]]:
     """
     Evaluates an infix expression using Shunting yard algorithm.
@@ -484,10 +490,11 @@ def shunting_yard_evaluation(iter_easier_tokens: Iterator[Union[int, float, str,
     
     try:
         return rpn_evaluation(output_queue)
-    except ZeroDivisionError:
-        print("couldn't evaluate expression due to division by zero")
+    except ZeroDivisionError as e:
+        print("couldn't evaluate expression due to ZeroDivisionError exception:", e)
 
 
+# https://www.geeksforgeeks.org/evaluate-the-value-of-an-arithmetic-expression-in-reverse-polish-notation-in-java/
 def rpn_evaluation(output_queue: List[Union[int, float, str]]) -> Union[int, float]:
     """
     Evaluates a reverse Polish notation expression.
@@ -553,7 +560,7 @@ def main() -> int:
         
         tokens.clear()
         
-        expression = input(prompt).strip()
+        expression = input(prompt).strip().lower()
         
         if expression == "quit":
             break
