@@ -1,0 +1,14 @@
+
+HOW TO RUN:
+
+- Install python 3.11 and add it to the system path.
+
+- Enter "py -3 [path to the py file]" in the command line.
+  Example: py -3 "C:\Users\example_username\eclipse-workspace\my_py_project\cs480lab2.py"
+
+- Enter any infix math expression.
+  The expression may contain the operators "+", "-", "*", "/", and "^".
+  The expression may contain the functions sin, cos, tan, cot, ln, and log.
+  The expression may contain parenthesis ("()") and curly brackets ("{}").
+
+- To quit the program, enter "quit".
