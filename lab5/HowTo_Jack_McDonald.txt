@@ -1,0 +1,13 @@
+
+HOW TO RUN:
+
+- Install python 3.11 and add it to the system path.
+
+- Place cs480lab5main.py, cs480lab5test.py, lab5_test_cfg.txt, and lab5_log.txt in the same folder.
+
+- Enter "py -3 [path to the py file]" in the command line.
+  Example: py -3 "C:\Users\example_username\eclipse-workspace\my_py_project\cs480lab5test.py"
+
+- Use lab5_test_cfg.txt to set up how the tests will generate, e.g. how many tests to run.
+
+- View test results in lab5_log.txt.
